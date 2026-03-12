@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Edit2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DeleteProductDialog } from "../../components/products/DeleteProductDialog";
+import { ProductFormDialog } from "../../components/products/ProductFormDialog";
 import { productService } from "../../services/productService";
 
 export function ProductListingPage() {
+	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 	const [deleteDialogData, setDeleteDialogData] = useState<{
 		open: boolean;
 		id: number | null;
@@ -33,13 +35,17 @@ export function ProductListingPage() {
 			<div className="flex items-center justify-between">
 				<h1 className="text-title-medium text-gray-900">Produtos</h1>
 				<button
-					onClick={() => {}}
-					className="bg-primary text-white hover:bg-tertiary transition-colors px-4 py-2 rounded-md font-medium text-sm opacity-50 cursor-not-allowed"
-					disabled
+					onClick={() => setIsAddDialogOpen(true)}
+					className="bg-primary text-white hover:bg-tertiary transition-colors px-4 py-2 rounded-md font-medium text-sm"
 				>
-					Adicionar Produto (Em Manutenção)
+					Adicionar Produto
 				</button>
 			</div>
+
+			<ProductFormDialog
+				open={isAddDialogOpen}
+				onOpenChange={setIsAddDialogOpen}
+			/>
 
 			<DeleteProductDialog
 				open={deleteDialogData.open}

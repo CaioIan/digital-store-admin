@@ -15,9 +15,13 @@ api.interceptors.response.use(
 	(error) => {
 		// Se a API retornar 401, significa que o cookie expirou ou é inválido
 		if (error.response?.status === 401) {
-			// Poderia emitir um evento ou chamar um dispatch para forçar o logout no frontend
-			console.warn("Sessão expirada ou não autenticada");
-			// Redirecionamento pode ser gerido no level do Router/Provider
+			console.warn("Sessão expirada ou não autenticada. Redirecionando para o login...");
+			
+			// Força o redirecionamento para a página de login
+			// Evita loop infinito se já estiver no login
+			if (!window.location.pathname.includes("/login")) {
+				window.location.href = "/login";
+			}
 		}
 		return Promise.reject(error);
 	},
