@@ -9,6 +9,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { OrderListingPage } from "./pages/orders/OrderListingPage";
 import { ProductListingPage } from "./pages/products/ProductListingPage";
+import { UserListingPage } from "./pages/users/UserListingPage";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +32,7 @@ function App() {
 							<Route index element={<Navigate to="/products" replace />} />
 							<Route path="products" element={<ProductListingPage />} />
 							<Route path="orders" element={<OrderListingPage />} />
-							<Route path="users" element={<div>Configurações Content</div>} />
+							<Route path="users" element={<UserListingPage />} />
 							<Route
 								path="settings"
 								element={<div>Configurações Content</div>}
