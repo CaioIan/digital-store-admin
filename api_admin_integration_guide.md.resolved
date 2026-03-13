@@ -1,0 +1,93 @@
+# Documentação de Integração: Pedidos (Admin)
+
+Esta documentação descreve como conectar o **Front-end Admin** à nova rota de listagem de pedidos da API.
+
+## 🔗 Endpoint de Listagem
+
+**URL:** `/v1/admin/orders`  
+**Método:** `GET`
+
+Este endpoint foi projetado para a visão geral do administrador, permitindo tanto a listagem global (fila de entrega) quanto a listagem filtrada por cliente.
+
+## 🔄 Endpoint de Atualização de Status
+
+**URL:** `/v1/admin/orders/:id/status`  
+**Método:** `PATCH`
+
+Permite que o admin mude o estado do pedido (ex: de "Pendente" para "Enviado").
+
+**Body (JSON):**
+```json
+{
+  "status": "shipped"
+}
+```
+
+### 🛡️ Segurança (Importante)
+Para acessar esta rota, a requisição deve:
+1.  **Estar Autenticada**: Enviar o cookie `access_token` (HTTP-Only) gerado no login.
+2.  **Ter Permissão**: O usuário logado deve possuir a role `ADMIN`. Se um usuário `USER` tentar acessar, receberá `403 Forbidden`.
+
+---
+
+## 📥 Parâmetros de Consulta (Query Params)
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+| :--- | :--- | :--- | :--- |
+| `userId` | `UUID` | Não | Filtra os pedidos de um usuário específico. Se omitido, retorna **todos** os pedidos do sistema. |
+| `page` | `Number` | Não | Página atual para paginação (Default: 1). |
+| `limit` | `Number` | Não | Quantidade de itens por página (Default: 10). |
+
+---
+
+## 🚦 Status Disponíveis
+- `pending`: Aguardando pagamento/processamento.
+- `completed`: Pedido finalizado (pago).
+- `cancelled`: Pedido cancelado.
+- `shipped`: Pedido enviado para transporte (Embalado).
+- `delivered`: Pedido entregue ao cliente.
+
+---
+
+## 📤 Exemplo de Resposta (Listagem)
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "status": "completed",
+      "created_at": "2026-03-12T19:40:00.000Z",
+      "total": 259.90,
+      "items": [
+        {
+          "product_id": " UUID-DO-PRODUTO ",
+          "product_name": "Tênis Esportivo Nike",
+          "image_url": "https://link-da-imagem.com/foto.jpg",
+          "quantity": 1,
+          "price_at_purchase": 259.90
+        }
+      ]
+    }
+  ],
+  "total": 45,
+  "limit": 10,
+  "page": 1
+}
+```
+
+---
+
+## 💡 Dicas para o Front-end (Admin)
+
+1.  **Tela de Dashboard/Logística**: Use a rota limpa (`GET /v1/admin/orders`) para mostrar a lista de todos os pedidos recentes que precisam ser embalados.
+2.  **Tela de Detalhes do Usuário**: Se você estiver no perfil de um cliente e quiser ver o histórico de compras dele, use o filtro: `GET /v1/admin/orders?userId={id_do_cliente}`.
+3.  **Estado do Pedido**: O campo `status` pode ser usado para colorir os cards (ex: `completed` em verde, `pending` em amarelo).
+
+---
+
+## 🛠️ Detalhes da Implementação (Backend)
+
+*   **Controller**: [admin-list-orders.controller.js](file:///c:/Users/ianca/workspace/digital-store-api/src/modules/order/http/controllers/admin-list-orders.controller.js)
+*   **Service**: `admin-list-orders.service.js`
+*   **Repository**: `OrderRepository.findAll()` - centraliza a lógica de busca com paginação e suporte a filtro opcional.
