@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Edit2, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DeleteProductDialog } from "../../components/products/DeleteProductDialog";
 import { ProductFormDialog } from "../../components/products/ProductFormDialog";
 import { productService } from "../../services/productService";
 
 export function ProductListingPage() {
+	const navigate = useNavigate();
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 	const [deleteDialogData, setDeleteDialogData] = useState<{
 		open: boolean;
@@ -164,6 +166,7 @@ export function ProductListingPage() {
 										<td className="px-6 py-4 text-right">
 											<div className="flex items-center justify-end gap-2">
 												<button
+													onClick={() => navigate(`/products/${product.id}/edit`)}
 													className="text-gray-400 hover:text-primary transition-colors p-1"
 													title="Editar"
 												>

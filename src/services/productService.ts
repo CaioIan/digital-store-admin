@@ -69,8 +69,18 @@ export const productService = {
 		return response.data.data as Product[];
 	},
 
+	getProductById: async (id: string) => {
+		const response = await api.get(`/v1/product/${id}`);
+		return response.data as Product;
+	},
+
 	createProduct: async (productData: CreateProductPayload) => {
 		const response = await api.post("/v1/product", productData);
+		return response.data;
+	},
+
+	updateProduct: async (id: string, productData: Partial<CreateProductPayload>) => {
+		const response = await api.patch(`/v1/product/${id}`, productData);
 		return response.data;
 	},
 

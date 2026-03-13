@@ -1,32 +1,35 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { 
-	X, 
-	Plus, 
-	Trash2, 
-	Upload, 
-	ImageIcon, 
-	ArrowUp, 
+import {
 	ArrowDown,
-	Loader2
+	ArrowUp,
+	ImageIcon,
+	Loader2,
+	Plus,
+	Trash2,
+	Upload,
+	X
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import * as Dialog from "@radix-ui/react-dialog";
-import { productSchema } from "./ProductSchema";
-import { productService, type CreateProductPayload } from "../../services/productService";
 import { categoryService } from "../../services/categoryService";
+import { productService, type CreateProductPayload, type Product } from "../../services/productService";
+import { productSchema } from "./ProductSchema";
 
 interface ProductFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	product?: Product;
 }
 
-export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps) {
+export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
+	const isEditMode = !!product;
 	const queryClient = useQueryClient();
 	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 	const [isUploadingImages, setIsUploadingImages] = useState(false);
+	const [isSuccess, setIsSuccess] = useState(false);
 
 	const { 
 		register, 
@@ -40,15 +43,71 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 	} = useForm<any>({
 		resolver: zodResolver(productSchema),
 		defaultValues: {
-			enabled: true,
-			useInMenu: false,
-			stock: 0,
-			gender: "Unisex",
-			options: [],
-			categoryIds: [],
-			images: [],
+			enabled: product?.enabled ?? true,
+			useInMenu: product?.use_in_menu ?? false,
+			stock: product?.stock ?? 0,
+			gender: product?.gender ?? "Unisex",
+			options: product?.options?.map(opt => ({
+				...opt,
+				values: opt.values.join(", ")
+			})) ?? [],
+			categoryIds: product?.categories?.map(c => c.id) ?? [],
+			images: product?.images?.map(img => ({ 
+				type: "image/existing", 
+				content: img.path || img.content 
+			})) ?? [],
+			name: product?.name ?? "",
+			slug: product?.slug ?? "",
+			brand: product?.brand ?? "",
+			description: product?.description ?? "",
+			price: product?.price ?? 0,
+			priceWithDiscount: product?.price && product?.price_with_discount 
+				? Math.round((1 - (product.price_with_discount / product.price)) * 100)
+				: 0,
 		},
 	});
+
+	// Pre-fill images state for previews
+	const [existingImagesView, setExistingImagesView] = useState<{ id?: string, url: string, type: string, file?: File }[]>(
+		product?.images?.map(img => ({ 
+			id: String(img.id),
+			url: img.path || img.content || "", 
+			type: "image/existing" 
+		})) ?? []
+	);
+
+	useEffect(() => {
+		if (product && !isSuccess) {
+			reset({
+				enabled: product.enabled,
+				useInMenu: product.use_in_menu,
+				stock: product.stock,
+				gender: product.gender,
+				options: product.options?.map(opt => ({
+					...opt,
+					values: opt.values.join(", ")
+				})) ?? [],
+				categoryIds: product.categories?.map(c => c.id) ?? [],
+				images: product.images?.map(img => ({ 
+					type: "image/existing", 
+					content: img.path || img.content 
+				})) ?? [],
+				name: product.name,
+				slug: product.slug,
+				brand: product.brand || "",
+				description: product.description || "",
+				price: product.price,
+				priceWithDiscount: product.price && product.price_with_discount 
+					? Math.round((1 - (product.price_with_discount / product.price)) * 100)
+					: 0,
+			});
+			setExistingImagesView(product.images?.map(img => ({ 
+				id: String(img.id),
+				url: img.path || img.content || "", 
+				type: "image/existing" 
+			})) ?? []);
+		}
+	}, [product, reset, isSuccess]);
 
 	const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
 		control,
@@ -98,13 +157,27 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 	});
 
 	const createProductMutation = useMutation({
-		mutationFn: productService.createProduct,
+		mutationFn: (payload: CreateProductPayload) => 
+			isEditMode 
+				? productService.updateProduct(String(product.id), payload)
+				: productService.createProduct(payload),
 		onSuccess: () => {
-			toast.success("Produto criado com sucesso!");
-			queryClient.invalidateQueries({ queryKey: ["products"] });
-			reset();
-			setSelectedFiles([]);
+			setIsSuccess(true);
 			onOpenChange(false);
+			toast.success(isEditMode ? "Produto atualizado com sucesso!" : "Produto criado com sucesso!");
+			
+			queryClient.invalidateQueries({ queryKey: ["products"] });
+			if (isEditMode) {
+				queryClient.invalidateQueries({ queryKey: ["product", String(product.id)] });
+			}
+			
+			// Timing delay to let the dialog close before clearing states
+			setTimeout(() => {
+				reset();
+				setSelectedFiles([]);
+				setExistingImagesView([]);
+				setIsSuccess(false);
+			}, 500);
 		},
 		onError: (error: any) => {
 			if (error.response?.status === 400 && error.response.data?.errors) {
@@ -123,48 +196,67 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 				});
 				toast.error('O formulário contém campos inválidos.');
 			} else {
-				toast.error('Erro ao criar o produto.');
+				toast.error(isEditMode ? 'Erro ao atualizar o produto.' : 'Erro ao criar o produto.');
 			}
 		},
 	});
 
 	const onSubmit = async (data: any) => {
-		let uploadedImagesArray: { type: string, content: string }[] = [];
+		let finalImages: { type: string, content: string }[] = [];
 
-		// Passo 1: Upload das Imagens (se houver)
-		if (selectedFiles.length > 0) {
-			setIsUploadingImages(true);
-			try {
+		// Passo 2: Upload das NOVAS Imagens (se houver) e montagem do array final respeitando a ORDEM do UI
+		setIsUploadingImages(true);
+		try {
+			const uploadedUrlsMap = new Map<string, string>(); // blobUrl -> remoteUrl
+			
+			if (selectedFiles.length > 0) {
 				const formData = new FormData();
 				selectedFiles.forEach(file => {
 					formData.append('images', file);
 				});
 				
 				const uploadResponse = await productService.uploadImages(formData);
-				// A API retorna um array de objetos com { url, public_id } ou similar
-				uploadedImagesArray = uploadResponse.map((img: { url: string }, index: number) => ({
-					type: selectedFiles[index].type,
-					content: img.url
-				}));
-			} catch (error) {
-				toast.error("Falha ao enviar as imagens. O cadastro foi cancelado.");
-				setIsUploadingImages(false);
-				return;
+				// Mapeamos o arquivo original (via URL do objeto) para a URL remota
+				selectedFiles.forEach((file: File, index: number) => {
+					// Procuramos o preview que tem este arquivo
+					const preview = existingImagesView.find((img: any) => img.file === file);
+					if (preview) {
+						uploadedUrlsMap.set(preview.url, uploadResponse[index].url);
+					}
+				});
 			}
-			setIsUploadingImages(false);
-		}
 
-		// Passo 2: Cálculo do Preço Final Absoluto
+			// Agora montamos o payload final baseado na ORDEM do existingImagesView
+			finalImages = existingImagesView.map((img: any) => {
+				if (img.type === "image/existing") {
+					return {
+						type: "image/existing",
+						content: img.url
+					};
+				} else {
+					// Imagem nova, pegar a URL remota que acabamos de receber
+					const remoteUrl = uploadedUrlsMap.get(img.url);
+					return {
+						type: img.type,
+						content: remoteUrl || img.url
+					};
+				}
+			});
+		} catch (error) {
+			toast.error("Falha ao enviar as imagens. A operação foi cancelada.");
+			setIsUploadingImages(false);
+			return;
+		}
+		setIsUploadingImages(false);
+
+		// Passo 3: Cálculo do Preço Final Absoluto
 		const basePrice = Number(data.price);
 		const discount = Number(data.priceWithDiscount || 0);
 		
-		// Só enviamos price_with_discount se realmente houver um desconto
-		let absolutePriceWithDiscount: number | undefined = undefined;
-		if (discount > 0) {
-			absolutePriceWithDiscount = Number((basePrice - (basePrice * (discount / 100))).toFixed(2));
-		}
+		// Always send price_with_discount to avoid keeping old discounted values on PATCH
+		const absolutePriceWithDiscount = Number((basePrice - (basePrice * (discount / 100))).toFixed(2));
 
-		const payload: CreateProductPayload = {
+		const payload: any = {
 			enabled: data.enabled,
 			name: data.name,
 			slug: data.slug,
@@ -176,45 +268,74 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 			price: basePrice,
 			price_with_discount: absolutePriceWithDiscount,
 			category_ids: data.categoryIds,
-			images: uploadedImagesArray,
-			options: data.options,
+			images: finalImages,
+			options: data.options.map((opt: any) => {
+				const values = typeof opt.values === 'string' 
+					? opt.values.split(',').map((v: string) => v.trim()).filter(Boolean) 
+					: opt.values;
+				
+				// Mandatory enforcement of shape based on type per API rules
+				return {
+					title: opt.title,
+					type: opt.type,
+					shape: opt.type === "color" ? "circle" : "square",
+					values: values
+				};
+			}),
 		};
 
-		createProductMutation.mutate(payload);
+		// Artificial delay for UI smoothness (avoid flickering for very fast connections)
+		await new Promise(resolve => setTimeout(resolve, 800));
+
+		try {
+			await createProductMutation.mutateAsync(payload);
+		} catch (error) {
+			// Error is already handled by the mutation's onError
+		}
 	};
 
 	const handleFileSelect = (files: FileList | null) => {
 		if (!files) return;
 		const newFiles = Array.from(files);
-		const updatedFiles = [...selectedFiles, ...newFiles];
-		setSelectedFiles(updatedFiles);
+		setSelectedFiles(prev => [...prev, ...newFiles]);
+		
+		const newPreviewItems = newFiles.map(f => {
+			const blobUrl = URL.createObjectURL(f);
+			return { id: blobUrl, url: blobUrl, type: f.type, file: f };
+		});
+		setExistingImagesView(prev => [...prev, ...newPreviewItems]);
 		
 		// Atualiza o estado do formulário para passar na validação do Zod
-		if (updatedFiles.length > 0) {
-			setValue("images", updatedFiles.map(f => ({ type: f.type, content: "https://temp.url" })), { shouldValidate: true });
-		}
+		const allImagesForValidation = [...existingImagesView, ...newPreviewItems];
+		setValue("images", allImagesForValidation.map(img => ({ type: img.type, content: img.url })), { shouldValidate: true });
 	};
 
 	const removeSelectedFile = (index: number) => {
-		const updatedFiles = selectedFiles.filter((_, i) => i !== index);
-		setSelectedFiles(updatedFiles);
+		const imgToRemove = existingImagesView[index];
+		
+		if (imgToRemove.type !== "image/existing" && imgToRemove.file) {
+			setSelectedFiles(prev => prev.filter(f => f !== imgToRemove.file));
+			URL.revokeObjectURL(imgToRemove.url);
+		}
+
+		const updatedExistingView = existingImagesView.filter((_, i: number) => i !== index);
+		setExistingImagesView(updatedExistingView);
 		
 		// Se não houver imagens, limpa o campo para disparar o erro .min(1)
-		setValue("images", updatedFiles.length > 0 
-			? updatedFiles.map(f => ({ type: f.type, content: "https://temp.url" }))
+		setValue("images", updatedExistingView.length > 0 
+			? updatedExistingView.map((img: any) => ({ type: img.type, content: img.url }))
 			: [], 
 			{ shouldValidate: true }
 		);
 	};
 
 	const moveImage = (index: number, direction: 'up' | 'down') => {
-		const newFiles = [...selectedFiles];
+		const newImgs = [...existingImagesView];
 		const targetIndex = direction === 'up' ? index - 1 : index + 1;
-		if (targetIndex >= 0 && targetIndex < newFiles.length) {
-			[newFiles[index], newFiles[targetIndex]] = [newFiles[targetIndex], newFiles[index]];
-			setSelectedFiles(newFiles);
-			// Sincroniza com o form state (opcional, mas bom para garantir consistência)
-			setValue("images", newFiles.map(f => ({ type: f.type, content: "https://temp.url" })));
+		if (targetIndex >= 0 && targetIndex < newImgs.length) {
+			[newImgs[index], newImgs[targetIndex]] = [newImgs[targetIndex], newImgs[index]];
+			setExistingImagesView(newImgs);
+			setValue("images", newImgs.map(img => ({ type: img.type, content: img.url })));
 		}
 	};
 
@@ -233,8 +354,12 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 					<div className="bg-white p-8 space-y-8">
 						<div className="flex flex-row items-center justify-between space-y-0">
 							<div className="space-y-1.5">
-								<Dialog.Title className="text-2xl font-black text-gray-900 tracking-tight">Novo Produto</Dialog.Title>
-								<Dialog.Description className="text-gray-500 font-medium">Cadastre um novo item no catálogo com detalhes e mídias.</Dialog.Description>
+								<Dialog.Title className="text-2xl font-black text-gray-900 tracking-tight">
+									{isEditMode ? 'Editar Produto' : 'Novo Produto'}
+								</Dialog.Title>
+								<Dialog.Description className="text-gray-500 font-medium">
+									{isEditMode ? 'Atualize as informações do item selecionado.' : 'Cadastre um novo item no catálogo com detalhes e mídias.'}
+								</Dialog.Description>
 							</div>
 						<button 
 							onClick={() => onOpenChange(false)}
@@ -349,11 +474,11 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 
 									{/* Grid de Previews */}
 									<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar p-1">
-										{selectedFiles.map((file, index) => (
-											<div key={`${file.name}-${index}`} className="flex flex-col p-3 bg-white rounded-xl border border-gray-100 shadow-sm group hover:border-primary/30 transition-all">
+										{existingImagesView.map((img, index) => (
+											<div key={`${img.url}-${index}`} className="flex flex-col p-3 bg-white rounded-xl border border-gray-100 shadow-sm group hover:border-primary/30 transition-all">
 												<div className="relative aspect-square w-full rounded-lg overflow-hidden bg-gray-50 border border-gray-100">
 													<img
-														src={URL.createObjectURL(file)}
+														src={img.url}
 														alt="Preview"
 														className="w-full h-full object-cover"
 													/>
@@ -388,7 +513,7 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 														</button>
 														<button
 															type="button"
-															disabled={index === selectedFiles.length - 1}
+															disabled={index === existingImagesView.length - 1}
 															onClick={() => moveImage(index, 'down')}
 															className="p-1.5 hover:bg-primary/5 rounded-lg border border-gray-100 disabled:opacity-30 transition-all shadow-sm"
 														>
@@ -510,9 +635,13 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 														<select
 															{...register(`options.${index}.type` as const)}
 															className="w-full h-8 bg-transparent border-b border-gray-100 outline-none text-sm cursor-pointer"
+															onChange={(e) => {
+																// Update internal value for immediate validation if needed
+																setValue(`options.${index}.type`, e.target.value);
+															}}
 														>
-															<option value="text">Texto</option>
-															<option value="color">Cor (Hex)</option>
+															<option value="text">Texto (Ex: P, M, G)</option>
+															<option value="color">Cor (Ex: #FFF, #000)</option>
 														</select>
 													</div>
 												</div>
@@ -566,16 +695,16 @@ export function ProductFormDialog({ open, onOpenChange }: ProductFormDialogProps
 							</button>
 							<button
 								type="submit"
-								disabled={isSubmitting || isUploadingImages}
-								className="px-8 py-2.5 rounded-xl bg-primary text-white font-black hover:bg-tertiary transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+								disabled={isSubmitting || isUploadingImages || createProductMutation.isPending || isSuccess}
+								className="px-8 py-2.5 rounded-xl bg-primary text-white font-black hover:bg-tertiary transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[180px] justify-center"
 							>
-								{(isSubmitting || isUploadingImages) ? (
+								{(isSubmitting || isUploadingImages || createProductMutation.isPending || isSuccess) ? (
 									<>
 										<Loader2 className="w-5 h-5 animate-spin" />
-										{isUploadingImages ? 'Enviando Imagens...' : 'Criando Produto...'}
+										{isUploadingImages ? 'Tratando Mídias...' : 'Salvando...'}
 									</>
 								) : (
-									'Criar Produto'
+									isEditMode ? 'Salvar Alterações' : 'Criar Produto'
 								)}
 							</button>
 						</div>
