@@ -38,6 +38,12 @@ export interface Product {
 	images: ProductImage[];
 	options: ProductOption[];
 	categories: ProductCategory[];
+	display_order?: number;
+}
+
+export interface ProductOrderItem {
+	id: number;
+	display_order: number;
 }
 
 export interface CreateProductPayload {
@@ -61,12 +67,13 @@ export interface CreateProductPayload {
 
 export const productService = {
 	getProducts: async () => {
-		// Para simplificar o admin, podemos pedir um limite alto ou implementar paginação,
-		// mas vamos trazer um array direto conforme contrato GET /v1/product/search
 		const response = await api.get("/v1/product/search", {
 			params: { limit: 50 },
 		});
-		return response.data.data as Product[];
+		const products = response.data.data as Product[];
+		return products.sort(
+			(a, b) => (a.display_order ?? Infinity) - (b.display_order ?? Infinity),
+		);
 	},
 
 	getProductById: async (id: string) => {
@@ -79,7 +86,10 @@ export const productService = {
 		return response.data;
 	},
 
-	updateProduct: async (id: string, productData: Partial<CreateProductPayload>) => {
+	updateProduct: async (
+		id: string,
+		productData: Partial<CreateProductPayload>,
+	) => {
 		const response = await api.patch(`/v1/product/${id}`, productData);
 		return response.data;
 	},
@@ -96,5 +106,14 @@ export const productService = {
 			},
 		});
 		return response.data; // Retorna array [{ url: "...", public_id: "..." }]
+	},
+
+	updateProductOrder: async (items: ProductOrderItem[]) => {
+		const promises = items.map((item) =>
+			api.patch(`/v1/product/${item.id}`, {
+				display_order: item.display_order,
+			}),
+		);
+		return Promise.all(promises);
 	},
 };
