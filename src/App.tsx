@@ -2,15 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 
-import { AdminLayout } from "./components/layout/AdminLayout";
-import { RequireAuth } from "./components/layout/RequireAuth";
-import { AuthProvider } from "./contexts/AuthContext";
-
-import { LoginPage } from "./pages/auth/LoginPage";
-import { OrderListingPage } from "./pages/orders/OrderListingPage";
-import { ProductListingPage } from "./pages/products/ProductListingPage";
-import { ProductEditPage } from "./pages/products/ProductEditPage";
-import { UserListingPage } from "./pages/users/UserListingPage";
+import { AdminLayout } from "./features/layout";
+import { AuthProvider, RequireAuth, LoginPage } from "./features/auth";
+import { UserListingPage } from "./features/users";
+import { OrderListingPage } from "./features/orders";
+import { ProductListingPage, ProductEditPage } from "./features/products";
 
 const queryClient = new QueryClient();
 

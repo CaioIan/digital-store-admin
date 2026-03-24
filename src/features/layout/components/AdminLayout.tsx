@@ -1,7 +1,7 @@
 import { LogOut, Package, Settings, ShoppingCart, Users } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/shared/lib/utils";
-import { useAuth } from "../../features/auth";
+import { useAuth } from "../../auth";
 
 const navigation = [
 	{ name: "Produtos", href: "/products", icon: Package },
