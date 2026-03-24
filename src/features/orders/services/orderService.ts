@@ -1,4 +1,4 @@
-import { api } from "../shared/lib/api";
+import { api } from "../../../shared/lib/api";
 import type { OrderListResponse, OrderStatus } from "../types/order";
 
 export const orderService = {
