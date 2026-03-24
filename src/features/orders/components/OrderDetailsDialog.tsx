@@ -1,7 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { OrderStatusDropdown } from "./OrderStatusDropdown";
 import type { Order } from "../types/order";
+import { OrderStatusDropdown } from "./OrderStatusDropdown";
 
 interface OrderDetailsDialogProps {
 	open: boolean;
@@ -9,7 +9,11 @@ interface OrderDetailsDialogProps {
 	order: Order | null;
 }
 
-export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDialogProps) {
+export function OrderDetailsDialog({
+	open,
+	onOpenChange,
+	order,
+}: OrderDetailsDialogProps) {
 	if (!order) return null;
 
 	return (
@@ -49,23 +53,31 @@ export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDi
 								</h3>
 								<div className="flex flex-col gap-1.5 text-sm">
 									<p className="text-gray-500">
-										Nome: <span className="text-gray-900 font-medium">
+										Nome:{" "}
+										<span className="text-gray-900 font-medium">
 											{order.client?.name || "N/A"}
 										</span>
 									</p>
 									<p className="text-gray-500">
-										Email: <span className="text-gray-900 font-medium">
+										Email:{" "}
+										<span className="text-gray-900 font-medium">
 											{order.client?.email || "N/A"}
 										</span>
 									</p>
 									{order.client?.cpf && (
 										<p className="text-gray-500">
-											CPF: <span className="text-gray-900 font-medium">{order.client.cpf}</span>
+											CPF:{" "}
+											<span className="text-gray-900 font-medium">
+												{order.client.cpf}
+											</span>
 										</p>
 									)}
 									{order.client?.phone && (
 										<p className="text-gray-500">
-											Telefone: <span className="text-gray-900 font-medium">{order.client.phone}</span>
+											Telefone:{" "}
+											<span className="text-gray-900 font-medium">
+												{order.client.phone}
+											</span>
 										</p>
 									)}
 								</div>
@@ -79,41 +91,59 @@ export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDi
 									{order.address ? (
 										<>
 											<p className="text-gray-500">
-												Logradouro: <span className="text-gray-900 font-medium">{order.address.street}</span>
+												Logradouro:{" "}
+												<span className="text-gray-900 font-medium">
+													{order.address.street}
+												</span>
 											</p>
 											{order.address.neighborhood && (
 												<p className="text-gray-500">
-													Bairro: <span className="text-gray-900 font-medium">{order.address.neighborhood}</span>
+													Bairro:{" "}
+													<span className="text-gray-900 font-medium">
+														{order.address.neighborhood}
+													</span>
 												</p>
 											)}
 											<p className="text-gray-500">
-												Cidade: <span className="text-gray-900 font-medium">{order.address.city}</span>
+												Cidade:{" "}
+												<span className="text-gray-900 font-medium">
+													{order.address.city}
+												</span>
 											</p>
 											{order.address.cep && (
 												<p className="text-gray-500">
-													CEP: <span className="text-gray-900 font-medium">{order.address.cep}</span>
+													CEP:{" "}
+													<span className="text-gray-900 font-medium">
+														{order.address.cep}
+													</span>
 												</p>
 											)}
 											{order.address.complement && (
 												<p className="text-gray-500">
-													Complemento: <span className="text-gray-900 font-medium">{order.address.complement}</span>
+													Complemento:{" "}
+													<span className="text-gray-900 font-medium">
+														{order.address.complement}
+													</span>
 												</p>
 											)}
 										</>
 									) : (
-										<p className="text-gray-400 italic">Endereço não informado</p>
+										<p className="text-gray-400 italic">
+											Endereço não informado
+										</p>
 									)}
 								</div>
 							</div>
 						</div>
 
 						<div className="flex flex-col gap-4">
-							<h3 className="font-semibold text-gray-900">
-								Itens do Pedido
-							</h3>
+							<h3 className="font-semibold text-gray-900">Itens do Pedido</h3>
 							<div className="flex flex-col gap-4">
 								{order.items.map((item) => (
-									<div key={item.product_id} className="flex gap-4 items-center">
+									<div
+										key={item.product_id}
+										className="flex gap-4 items-center"
+									>
 										<img
 											src={item.image_url}
 											alt={item.product_name}
@@ -151,6 +181,7 @@ export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDi
 					<div className="mt-8 flex justify-end gap-3">
 						<button
 							onClick={() => onOpenChange(false)}
+							type="button"
 							className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
 						>
 							Fechar
