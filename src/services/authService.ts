@@ -12,6 +12,7 @@ export interface UserProfile {
 	email: string;
 	cpf?: string;
 	phone?: string;
+	role: "USER" | "ADMIN";
 }
 
 export const authService = {

@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 
 import { AdminLayout } from "./components/layout/AdminLayout";
-import { RequireAuth } from "./components/layout/RequireAuth";
+import { RequireAdminAuth } from "./components/layout/RequireAdminAuth";
 import { AuthProvider } from "./contexts/AuthContext";
 
 import { LoginPage } from "./pages/auth/LoginPage";
@@ -25,9 +25,9 @@ function App() {
 						<Route
 							path="/"
 							element={
-								<RequireAuth>
+								<RequireAdminAuth>
 									<AdminLayout />
-								</RequireAuth>
+								</RequireAdminAuth>
 							}
 						>
 							<Route index element={<Navigate to="/products" replace />} />
