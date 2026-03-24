@@ -20,7 +20,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginPage() {
 	const navigate = useNavigate();
 	const location = useLocation();
-	const { login, user } = useAuth();
+	const { login } = useAuth();
 	const [globalError, setGlobalError] = useState<string | null>(null);
 
 	// Onde o usuário tentava ir, ou default para "/products"
@@ -38,19 +38,6 @@ export function LoginPage() {
 		try {
 			setGlobalError(null);
 			await login(data);
-
-			// Validar se o usuário é ADMIN após o login
-			if (user?.role !== "ADMIN") {
-				// Se não for ADMIN, mostrar erro e não permitir acesso
-				setGlobalError(
-					"Você não tem permissão para acessar o painel administrativo.",
-				);
-				toast.error("Acesso negado. Apenas administradores podem acessar.");
-				// Fazer logout removendo token
-				localStorage.removeItem("access_token");
-				return;
-			}
-
 			toast.success("Login bem sucedido!");
 			navigate(from, { replace: true });
 		} catch (error: any) {
