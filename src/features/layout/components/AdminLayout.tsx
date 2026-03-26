@@ -2,7 +2,6 @@ import {
 	LayoutGrid,
 	LogOut,
 	Package,
-	Settings,
 	ShoppingCart,
 	Users,
 } from "lucide-react";
@@ -15,7 +14,6 @@ const navigation = [
 	{ name: "Categorias", href: "/categories", icon: LayoutGrid },
 	{ name: "Pedidos", href: "/orders", icon: ShoppingCart },
 	{ name: "Usuários", href: "/users", icon: Users },
-	{ name: "Configurações", href: "/settings", icon: Settings },
 ];
 
 export function AdminLayout() {

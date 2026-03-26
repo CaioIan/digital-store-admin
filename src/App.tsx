@@ -33,10 +33,6 @@ function App() {
 							<Route path="categories" element={<CategoryListingPage />} />
 							<Route path="orders" element={<OrderListingPage />} />
 							<Route path="users" element={<UserListingPage />} />
-							<Route
-								path="settings"
-								element={<div>Configurações Content</div>}
-							/>
 						</Route>
 
 						<Route path="*" element={<Navigate to="/products" replace />} />
