@@ -7,6 +7,7 @@ import { AuthProvider, RequireAuth, LoginPage } from "./features/auth";
 import { UserListingPage } from "./features/users";
 import { OrderListingPage } from "./features/orders";
 import { ProductListingPage, ProductEditPage } from "./features/products";
+import { CategoryListingPage } from "./features/categories";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function App() {
 							<Route index element={<Navigate to="/products" replace />} />
 							<Route path="products" element={<ProductListingPage />} />
 							<Route path="products/:id/edit" element={<ProductEditPage />} />
+							<Route path="categories" element={<CategoryListingPage />} />
 							<Route path="orders" element={<OrderListingPage />} />
 							<Route path="users" element={<UserListingPage />} />
 							<Route

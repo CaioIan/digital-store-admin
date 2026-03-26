@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Variável de ambiente pode ser configurada futuramente (.env)
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export const api = axios.create({

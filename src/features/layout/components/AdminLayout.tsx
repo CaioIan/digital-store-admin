@@ -1,10 +1,18 @@
-import { LogOut, Package, Settings, ShoppingCart, Users } from "lucide-react";
+import {
+	LayoutGrid,
+	LogOut,
+	Package,
+	Settings,
+	ShoppingCart,
+	Users,
+} from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/shared/lib/utils";
 import { useAuth } from "../../auth";
 
 const navigation = [
 	{ name: "Produtos", href: "/products", icon: Package },
+	{ name: "Categorias", href: "/categories", icon: LayoutGrid },
 	{ name: "Pedidos", href: "/orders", icon: ShoppingCart },
 	{ name: "Usuários", href: "/users", icon: Users },
 	{ name: "Configurações", href: "/settings", icon: Settings },
