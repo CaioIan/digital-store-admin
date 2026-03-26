@@ -1,4 +1,4 @@
-# 📊 Digital Store — Painel Administrativo
+# 📊 Digital Store — Painel Administrativo (Stable Version)
 
 <div align="center">
   <img src="src/assets/images/logo-header.svg" alt="Digital Store Logo" height="50" />
